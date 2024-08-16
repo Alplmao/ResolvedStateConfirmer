@@ -1,3 +1,0 @@
-C:\Users\support\source\repos\NodeJSConsole\NodeJSConsole\obj\Debug\NodeJSConsole.njsproj.AssemblyReference.cache
-C:\Users\support\source\repos\NodeJSConsole\NodeJSConsole\obj\Debug\NodeJSConsole.njsproj.CoreCompileInputs.cache
-C:\Users\support\source\repos\NodeJSConsole\NodeJSConsole\bin\Microsoft.NodejsTools.WebRole.dll
