@@ -1,0 +1,37 @@
+<<<<<<< Updated upstream:package.json
+{
+  "name": "node-jsconsole",
+  "version": "0.0.0",
+  "description": "NodeJSConsole",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "eslint": "^8.21.0"
+  },
+  "eslintConfig": {
+  }
+}
+=======
+{
+  "name": "node-jsconsole",
+  "version": "0.0.0",
+  "description": "NodeJSConsole",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "eslint": "^8.21.0"
+  },
+  "eslintConfig": {},
+  "dependencies": {
+    "axios": "^1.7.4",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "nodemailer": "^6.9.14",
+    "path": "^0.12.7"
+  }
+}
+>>>>>>> Stashed changes:NodeJSConsole/package.json
