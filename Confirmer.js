@@ -156,6 +156,13 @@ async function handleConfirmationRequest(req, res) {
             await updateWorkItemStateToClosed(workItemId, email);
             await addCommentToWorkItem(workItemId, `Feature #${workItemId}:${title} marked as Closed. Confirmation received from ${email}.`, email);
             res.send(`Feature #${workItemId}: ${title} has been marked as Closed.`);
+
+            // Update sentWorkItems status to 'closed'
+            const sentWorkItems = readSentWorkItems();
+            if (sentWorkItems[workItemId]) {
+                sentWorkItems[workItemId].status = 'closed';
+                writeSentWorkItems(sentWorkItems);
+            }
         } else if (status === 'notresolved') {
             // Mark the status as 'notresolved'
             await addCommentToWorkItem(workItemId, `Feature #${workItemId}:${title} is not resolved. Confirmation received from ${email}.`, email);
@@ -175,6 +182,7 @@ async function handleConfirmationRequest(req, res) {
         res.send(`An error occurred: ${error.message}`);
     }
 }
+
 
 async function addCommentToWorkItem(workItemId, comment, email) {
     const workItemInstance = axios.create({
@@ -216,9 +224,9 @@ async function sendCommentEmail(workItemId, comment, email) {
 
     const mailOptions = {
         from: emailUser,
-        to: 'yazilimgelistirme@wagner.com.tr',
-        subject: `Work Item #${workItemId} Comment`,
-        text: `Comment for Work Item #${workItemId}:\n\n${comment}`
+        to: 'berkealpertugrul@gmail.com', //yazilimgelistirme@wagner.com.tr
+        subject: `Feature #${workItemId} Comment`,
+        text: `Comment for feature #${workItemId}:\n\n${comment}`
     };
 
     try {
@@ -229,58 +237,70 @@ async function sendCommentEmail(workItemId, comment, email) {
     }
 }
 
-// Function to check for auto-close
-function checkForAutoClose() {
+
+async function checkForAutoClose() {
     const sentWorkItems = readSentWorkItems();
+    console.log('Checking for auto-close. Current work items:', sentWorkItems);
 
     for (const [workItemId, { sentAt, status }] of Object.entries(sentWorkItems)) {
         const sentTime = new Date(sentAt).getTime();
         const currentTime = Date.now();
 
-        // Check if 48 hours have passed since the email was sent
-        if ((currentTime - sentTime) >= (1 * 1 * 30 * 1000)) { // 48 hours in milliseconds
+        console.log(`Checking work item #${workItemId}: Sent at ${sentAt}, Status ${status}`);
+
+        // Skip items that are already closed
+        if (status === 'closed') {
+            console.log(`Work item #${workItemId} is already closed. Skipping.`);
+            continue;
+        }
+
+        if ((currentTime - sentTime) >= (1 * 1 * 40 * 1000)) { // 48 saat 48 * 60 * 60 * 1000
             if (status === 'pending') {
-                // Only auto-close if the status is still 'pending'
-                updateWorkItemStateToClosed(workItemId, sentWorkItems[workItemId].email);
-                addCommentToWorkItem(workItemId, `The 48-hour time limit has passed. Feature #${workItemId} has been auto-closed.`, sentWorkItems[workItemId].email);
+                console.log(`Work item #${workItemId} has reached 48 hours. Auto-closing.`);
+                await updateWorkItemStateToClosed(workItemId, sentWorkItems[workItemId].email);
+                await addCommentToWorkItem(workItemId, `The 48-hour time limit has passed. Feature #${workItemId} has been auto-closed.`, sentWorkItems[workItemId].email);
+
+                // Update the status to 'closed' and remove the item from tracking
+                sentWorkItems[workItemId].status = 'closed';
                 delete sentWorkItems[workItemId];
             }
         }
     }
 
+    // Write updated status to file
     writeSentWorkItems(sentWorkItems);
 }
 
-// Function to poll work items and send confirmation emails
+
+
+
+
 async function pollWorkItems() {
     const workItems = await fetchWorkItemEmails();
     const sentWorkItems = readSentWorkItems();
 
     for (const workItem of workItems) {
         if (!sentWorkItems[workItem.id]) {
-            // Send the confirmation email for the work item
             await sendConfirmationEmail(workItem);
-
-            // Store the timestamp and status of when the email was sent
             sentWorkItems[workItem.id] = { sentAt: new Date().toISOString(), email: workItem.email, status: 'pending' };
         }
     }
 
     writeSentWorkItems(sentWorkItems);
 
-    // Check for auto-close
-    checkForAutoClose();
+    // Call async function checkForAutoClose
+    await checkForAutoClose();
 }
 
-// Schedule the polling function to run every 5 minutes
-setInterval(pollWorkItems, 1 * 10 * 1000); // 5 minutes in milliseconds
 
-// Define endpoint to handle confirmation requests
+setInterval(pollWorkItems, 1 * 10 * 1000); // 5 dakika 5*60*1000
+
+
 app.get('/confirm', async (req, res) => {
     await handleConfirmationRequest(req, res);
 });
 
-// Start the server
+
 const port = 1337;
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
