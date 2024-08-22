@@ -12,12 +12,12 @@ const personalAccessToken = 'dle4tcdy4ovf6xwezhsn73yeu2pazh2fbj6dirzqj2sylwkglp6
 
 const emailService = 'gmail';
 const emailUser = 'resolvedstateconfirmation@gmail.com';
-const emailPass = 'qfyx pork xgal utsi'; // Ensure this is correct and secure
+const emailPass = 'qfyx pork xgal utsi'; //gmail app passkey
 
-// Path to store the list of sent work items
+
 const sentWorkItemsFile = path.join(__dirname, 'sentWorkItems.json');
 
-// Create an instance of axios with the base URL and authentication headers for WIQL queries
+
 const wiqlInstance = axios.create({
     baseURL: `https://dev.azure.com/${organization}/${project}/_apis/wit/wiql?api-version=6.0`,
     headers: {
@@ -26,7 +26,7 @@ const wiqlInstance = axios.create({
     }
 });
 
-// Function to read sent work items from file
+
 function readSentWorkItems() {
     if (fs.existsSync(sentWorkItemsFile)) {
         const data = fs.readFileSync(sentWorkItemsFile);
@@ -35,12 +35,12 @@ function readSentWorkItems() {
     return {};
 }
 
-// Function to write sent work items to file
+
 function writeSentWorkItems(sentWorkItems) {
     fs.writeFileSync(sentWorkItemsFile, JSON.stringify(sentWorkItems, null, 2));
 }
 
-// Function to fetch work item IDs, email addresses, and titles using WIQL
+
 async function fetchWorkItemEmails() {
     const wiqlQuery = ` 
     SELECT [System.Id], [System.Title], [Custom.Requester]
@@ -52,7 +52,7 @@ async function fetchWorkItemEmails() {
         const response = await wiqlInstance.post('', { query: wiqlQuery });
         const workItems = response.data.workItems;
 
-        // Fetch detailed work item info including email addresses and titles
+        
         const detailedWorkItems = await Promise.all(workItems.map(async item => {
             const workItemResponse = await axios.get(`https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${item.id}?api-version=6.0`, {
                 headers: {
@@ -74,7 +74,7 @@ async function fetchWorkItemEmails() {
     }
 }
 
-// Function to send confirmation email
+
 async function sendConfirmationEmail(workItem) {
     const yesLink = `http://localhost:1337/confirm?workItemId=${workItem.id}&status=closed`;
     const noLink = `http://localhost:1337/confirm?workItemId=${workItem.id}&status=notresolved`;
@@ -111,7 +111,7 @@ async function sendConfirmationEmail(workItem) {
     }
 }
 
-// Function to update the state of work items to 'Closed' and add a confirmation description
+
 async function updateWorkItemStateToClosed(workItemId, email) {
     const workItemInstance = axios.create({
         baseURL: `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems`,
@@ -125,7 +125,7 @@ async function updateWorkItemStateToClosed(workItemId, email) {
         {
             op: 'add',
             path: '/fields/System.State',
-            value: 'Closed' // New state
+            value: 'Closed' 
         }
     ];
 
@@ -137,12 +137,12 @@ async function updateWorkItemStateToClosed(workItemId, email) {
     }
 }
 
-// Function to handle confirmation URL
+
 async function handleConfirmationRequest(req, res) {
     const { workItemId, status } = req.query;
 
     try {
-        // Fetch work item details to get the email
+       
         const workItemResponse = await axios.get(`https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=6.0`, {
             headers: {
                 'Authorization': `Basic ${Buffer.from(':' + personalAccessToken).toString('base64')}`
@@ -157,18 +157,18 @@ async function handleConfirmationRequest(req, res) {
             await addCommentToWorkItem(workItemId, `Feature #${workItemId}:${title} marked as Closed. Confirmation received from ${email}.`, email);
             res.send(`Feature #${workItemId}: ${title} has been marked as Closed.`);
 
-            // Update sentWorkItems status to 'closed'
+            
             const sentWorkItems = readSentWorkItems();
             if (sentWorkItems[workItemId]) {
                 sentWorkItems[workItemId].status = 'closed';
                 writeSentWorkItems(sentWorkItems);
             }
         } else if (status === 'notresolved') {
-            // Mark the status as 'notresolved'
+            
             await addCommentToWorkItem(workItemId, `Feature #${workItemId}:${title} is not resolved. Confirmation received from ${email}.`, email);
             res.send(`A comment has been added to Feature #${workItemId}: ${title} stating that the issue is not resolved.`);
 
-            // Update sentWorkItems status
+            
             const sentWorkItems = readSentWorkItems();
             if (sentWorkItems[workItemId]) {
                 sentWorkItems[workItemId].status = 'notresolved';
@@ -202,11 +202,11 @@ async function addCommentToWorkItem(workItemId, comment, email) {
     ];
 
     try {
-        // Update the work item with the comment
+        
         const response = await workItemInstance.patch(`/${workItemId}?api-version=6.0`, updatePayload);
         console.log(`Comment added to Feature #${workItemId}:`, response.data);
 
-        // Send the comment via email
+        
         await sendCommentEmail(workItemId, comment, email);
     } catch (error) {
         console.error(`Error adding comment to Feature #${workItemId}:`, error.response ? error.response.data : error.message);
@@ -248,7 +248,7 @@ async function checkForAutoClose() {
 
         console.log(`Checking work item #${workItemId}: Sent at ${sentAt}, Status ${status}`);
 
-        // Skip items that are already closed
+        
         if (status === 'closed') {
             console.log(`Work item #${workItemId} is already closed. Skipping.`);
             continue;
@@ -260,14 +260,14 @@ async function checkForAutoClose() {
                 await updateWorkItemStateToClosed(workItemId, sentWorkItems[workItemId].email);
                 await addCommentToWorkItem(workItemId, `The 48-hour time limit has passed. Feature #${workItemId} has been auto-closed.`, sentWorkItems[workItemId].email);
 
-                // Update the status to 'closed' and remove the item from tracking
+                
                 sentWorkItems[workItemId].status = 'closed';
                 delete sentWorkItems[workItemId];
             }
         }
     }
 
-    // Write updated status to file
+    
     writeSentWorkItems(sentWorkItems);
 }
 
@@ -288,7 +288,7 @@ async function pollWorkItems() {
 
     writeSentWorkItems(sentWorkItems);
 
-    // Call async function checkForAutoClose
+    
     await checkForAutoClose();
 }
 
