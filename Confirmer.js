@@ -8,7 +8,7 @@ const app = express();
 
 const organization = 'berkealpertugrul';
 const project = 'SupportResolvedConfirmation';
-const personalAccessToken = 'dle4tcdy4ovf6xwezhsn73yeu2pazh2fbj6dirzqj2sylwkglp6a'; // Azure DevOps Personal Access Token
+const personalAccessToken = 'dle4tcdy4ovf6xwezhsn73yeu2pazh2fbj6dirzqj2sylwkglp6a'; // Azure DevOps Personal Access Token irm5//u7obfhu37u4mmk77cxbjfecq//fmrmssp25a2btv5l5jqt3kga yeni token
 
 const emailService = 'gmail';
 const emailUser = 'resolvedstateconfirmation@gmail.com';
