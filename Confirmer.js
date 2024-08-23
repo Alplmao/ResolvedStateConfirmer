@@ -27,7 +27,7 @@ const wiqlInstance = axios.create({
 });
 
 
-function readSentWorkItems() {
+function readSentWorkItems() {                              //readSentWorkItems  ve writeSentWorkItems sentworkitems.json dosyasını okuyor, sentworkitems.json dosyası 5 dakikada bir mail atıldığında aynı maili birden fazla atmayı önlüyor, aynı zamanda 48 saat sonra kapanması için tarih tutuyor.
     if (fs.existsSync(sentWorkItemsFile)) {
         const data = fs.readFileSync(sentWorkItemsFile);
         return JSON.parse(data);
@@ -41,12 +41,13 @@ function writeSentWorkItems(sentWorkItems) {
 }
 
 
-async function fetchWorkItemEmails() {
-    const wiqlQuery = ` 
+async function fetchWorkItemEmails() {                   //resolved olan bütün work itemların idlerini,isimlerini ve "requester" olarak ismini değiştirdiğim optional attendee 1'i çağırıyor.
+    const wiqlQuery = `                                  
     SELECT [System.Id], [System.Title], [Custom.Requester]
     FROM WorkItems
     WHERE [System.State] = 'Resolved'
     `;
+    //not: optional attendee 1 mi yoksa başka bir şey mi hatırlamıyorum
 
     try {
         const response = await wiqlInstance.post('', { query: wiqlQuery });
@@ -75,11 +76,11 @@ async function fetchWorkItemEmails() {
 }
 
 
-async function sendConfirmationEmail(workItem) {
+async function sendConfirmationEmail(workItem) {  //confirmation emaillerini gönderen method
     const yesLink = `http://localhost:1337/confirm?workItemId=${workItem.id}&status=closed`;
     const noLink = `http://localhost:1337/confirm?workItemId=${workItem.id}&status=notresolved`;
 
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({     //mail göndermek için nodemailer kullandım, gmailden app passkey çıkartmadan çalışmıyor
         service: emailService,
         auth: {
             user: emailUser,
@@ -112,7 +113,7 @@ async function sendConfirmationEmail(workItem) {
 }
 
 
-async function updateWorkItemStateToClosed(workItemId, email) {
+async function updateWorkItemStateToClosed(workItemId, email) { //work item ı closed olarak işaretliyor.
     const workItemInstance = axios.create({
         baseURL: `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems`,
         headers: {
@@ -138,7 +139,7 @@ async function updateWorkItemStateToClosed(workItemId, email) {
 }
 
 
-async function handleConfirmationRequest(req, res) {
+async function handleConfirmationRequest(req, res) {  //work itemlara comment ekliyor ve json file'ı güncelliyor
     const { workItemId, status } = req.query;
 
     try {
@@ -184,7 +185,7 @@ async function handleConfirmationRequest(req, res) {
 }
 
 
-async function addCommentToWorkItem(workItemId, comment, email) {
+async function addCommentToWorkItem(workItemId, comment, email) { //comment i eklemek için kullandığımız method
     const workItemInstance = axios.create({
         baseURL: `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems`,
         headers: {
@@ -213,7 +214,7 @@ async function addCommentToWorkItem(workItemId, comment, email) {
     }
 }
 
-async function sendCommentEmail(workItemId, comment, email) {
+async function sendCommentEmail(workItemId, comment, email) { //work item a yazılan comment i bize de yollayan method
     const transporter = nodemailer.createTransport({
         service: emailService,
         auth: {
@@ -238,7 +239,7 @@ async function sendCommentEmail(workItemId, comment, email) {
 }
 
 
-async function checkForAutoClose() {
+async function checkForAutoClose() { //json file ı okuyor ve work itemları 48 saat içinde kapanmalarını sağlıyor, test için 40 saniyede kapanıyor. 48 saat için 48*60*60*1000 olarak değiştirin.
     const sentWorkItems = readSentWorkItems();
     console.log('Checking for auto-close. Current work items:', sentWorkItems);
 
@@ -275,7 +276,7 @@ async function checkForAutoClose() {
 
 
 
-async function pollWorkItems() {
+async function pollWorkItems() { //5 dakikada bir resolved emailleri ve otomatik olarak kapanması gereken emailleri kontrol ediyor , test için 10 saniyeye ayarlı
     const workItems = await fetchWorkItemEmails();
     const sentWorkItems = readSentWorkItems();
 
